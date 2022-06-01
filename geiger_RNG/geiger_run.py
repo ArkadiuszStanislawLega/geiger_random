@@ -9,6 +9,9 @@ from geiger_RNG.geiger_random_number_generator import GeigerRandomNumberGenerato
 
 
 class Geiger:
+    INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
+    ERROR_INITIALIZATION_USB = 'Error at initializing USB device: '
+    ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
     CONFIG_FILE_NAME = 'configuration.ini'
 
     def __init__(self):
@@ -59,12 +62,12 @@ class Geiger:
                 self.__is_configuration_loaded = False
 
         if not self.__is_configuration_loaded:
-            print >> sys.stderr, ("Error at loading configuration file.")
+            print >> sys.stderr, self.ERROR_LOADING_CONFIGURATION_MESSAGE
             sys.exit(1)
 
         try:
-            print("Initializing Geiger device...")
+            print(self.INITIALIZATION_MESSAGE)
             self.__comm = usbcomm.Connector(self.__conf)
         except usbcomm.CommException as exp:
-            print("Error at initializing USB device: %s", str(exp))
+            print(f"{self.ERROR_INITIALIZATION_USB} {str(exp)}")
             sys.exit(1)
