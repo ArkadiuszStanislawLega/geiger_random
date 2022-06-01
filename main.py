@@ -4,10 +4,7 @@ import sys
 import os
 import signal
 import monitor
-
-
-
-
+import geiger_RNG.geiger_random_number_generator as GRNG
 
 
 class Geiger:
@@ -21,12 +18,11 @@ class Geiger:
         self.__conf = configparser.ConfigParser()
         self.__comm = None
         self.__monitor = None
-        self.__generator = GeigerRandomNumberGenerator(2)
+        self.__generator = GRNG.GeigerRandomNumberGenerator(2)
 
         self.read_conf()
         self.__monitor = monitor.Monitor(configuration=self.__conf, usbcomm=self.__comm)
 
-        # register SIGINT (Ctrl-C) signal handler
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
 
@@ -45,11 +41,6 @@ class Geiger:
 
                 if len(last) > 1:
                     last.pop(0)
-
-
-    # print(self.__comm)
-
-    # default config file name
 
     def signal_handler(self, signum, frame):
         """Handles stopping signals, closes all updaters and threads and exits."""
