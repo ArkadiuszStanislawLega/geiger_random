@@ -1,18 +1,16 @@
-import sys
 import threading
 import _thread
 import time
-import configparser
-import logging
 
-from geiger_RNG import usbcomm
+from usb_communication.comm_exception import CommException
 
 
 class Monitor(object):
+    INTERVALS = 1
+
     _interval = None
     _usbcomm = None
     _log = False
-    _configuration = None
 
     _timer = None
 
@@ -21,20 +19,11 @@ class Monitor(object):
     _radiation = None
 
     def __init__(self, configuration, usbcomm):
-        self._log = logging.getLogger("geiger.monitor")
         self._usbcomm = usbcomm
-        self._configuration = configuration
-        confFileSection = 'monitor'
-        try:
-            self._interval = configuration.getint(confFileSection, 'interval')
-        except configparser.Error as e:
-            self._log.critical("Measuring interval wrong or not provided: %s.", str(e))
-            sys.exit(1)
+        self._interval = self.INTERVALS
 
-        self._log.info("Setting programmed voltage and interval to %d seconds.", self._interval)
-
-        usbcomm.setVoltageFromConfigFile()
-        usbcomm.setInterval(self._interval)
+        usbcomm.set_voltage_from_config_file()
+        usbcomm.set_interval(self._interval)
 
     def start(self):
         """Enables cyclic monitoring. The first measurement cycle has the 1.5 length of the given interval
@@ -48,7 +37,7 @@ class Monitor(object):
         """Stops measuring cycle and closes all updaters."""
         self._timer.cancel()
 
-        self._log.info("Stopping all updaters.")
+        print("Stopping all updaters.")
 
     @property
     def get_radiation(self):
@@ -68,17 +57,17 @@ class Monitor(object):
         timestamp = time.gmtime()
 
         try:
-            cpm, self._radiation = self._usbcomm.getCPMandRadiation()
-        except usbcomm.CommException as e:
-            self._log.error("USB device error: %s. Forcing device reset and wait of 1.5 cycle length.", str(e))
-            self._log.info("Resetting device.")
+            cpm, self._radiation = self._usbcomm.get_CP_mand_radiation()
+        except CommException as e:
+            print("USB device error: %s. Forcing device reset and wait of 1.5 cycle length.", str(e))
+            print("Resetting device.")
             try:
                 self._usbcomm.resetConnection()
-                self._log.info("Setting programmed voltage and interval to %d seconds.", self._interval)
-                self._usbcomm.setVoltageFromConfigFile()
-                self._usbcomm.setInterval(self._interval)
-            except usbcomm.CommException as e:
-                self._log.critical("Error at reinitializing device: %s", str(e))
+                print("Setting programmed voltage and interval to %d seconds.", self._interval)
+                self._usbcomm.set_voltage_from_config_file()
+                self._usbcomm.set_interval(self._interval)
+            except CommException as e:
+                print("Error at reinitializing device: %s", str(e))
                 self.stop()
                 # close entire application
                 _thread.interrupt_main()
@@ -89,4 +78,4 @@ class Monitor(object):
             self._timer.start()
             return
 
-        self._log.info(f"pushing data: {cpm} CPM, {self._radiation} uSv/h")
+        print(f"pushing data: {cpm} CPM, {self._radiation} uSv/h")

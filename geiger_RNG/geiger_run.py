@@ -4,11 +4,16 @@ import sys
 
 import configparser
 
-from geiger_RNG import usbcomm, monitor
+from geiger_RNG import monitor
 from geiger_RNG.geiger_random_number_generator import GeigerRandomNumberGenerator
+from usb_communication.comm_exception import CommException
+from usb_communication.connector import Connector
 
 
 class Geiger:
+
+
+
     INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
@@ -54,8 +59,8 @@ class Geiger:
     def __initialise_usb_communication(self):
         try:
             print(self.INITIALIZATION_MESSAGE)
-            self.__comm = usbcomm.Connector(self.__conf)
-        except usbcomm.CommException as exp:
+            self.__comm = Connector(self.__conf)
+        except CommException as exp:
             print(f"{self.ERROR_INITIALIZATION_USB_MESSAGE} {str(exp)}")
             sys.exit(1)
 
