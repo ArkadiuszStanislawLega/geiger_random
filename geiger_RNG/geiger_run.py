@@ -10,6 +10,7 @@ from usb_communication.connector import Connector
 
 
 class Geiger:
+    SIZE_OF_GENERATED_NUMBER_IN_BITS = 2
     INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
@@ -21,7 +22,7 @@ class Geiger:
 
         self.__initialise_usb_communication()
         self.__monitor = monitor.Monitor(usb_comm=self.__comm)
-        self.__generator = GeigerRandomNumberGenerator(2)
+        self.__generator = GeigerRandomNumberGenerator(SIZE_OF_GENERATED_NUMBER_IN_BITS)
 
         self.__init_ctr_c_handler()
 

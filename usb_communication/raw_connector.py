@@ -21,12 +21,11 @@ class RawConnector(object):
     GET_VOLTAGE = 31
     ACKNOWLEDGE_UNCHECKED_COUNT = 40
 
-    _device = None
-
     def __init__(self):
         """Initiates the class and opens the device. Warning! 
         The constructor assumes that only one Geiger device is connected to the bus.
         Otherwise, it opens the first-found one."""
+        self._device = None
         self._open_device()
 
     def _open_device(self):
@@ -107,6 +106,4 @@ class RawConnector(object):
     def __str__(self):
         """Returns the string containing all data acquired from the device: 
         actual voltage, current CPI and countAcknowledged flag."""
-        return "CPI: " + str(self.get_CPI()) + ", supply: " + str(
-            self.get_raw_voltage()) + ", count acknowledged: " + str(
-            self.is_count_acknowledged())
+        return f'CPI: {str(self.get_CPI())}, supply: {str(self.get_raw_voltage())}, count acknowledged: {str(self.is_count_acknowledged())}'

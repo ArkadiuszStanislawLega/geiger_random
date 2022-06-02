@@ -52,8 +52,7 @@ class Connector(RawConnector):
     def set_interval(self, seconds):
         """Sets the measuring interval in seconds."""
         if seconds < 1 or seconds > 0xffff / self.TIMER_TICKS_PER_SECOND:
-            raise CommException(
-                "interval has to be between 1 and " + str(0xffff / self.TIMER_TICKS_PER_SECOND) + " seconds")
+            raise CommException(f'interval has to be between 1 and {str(0xffff / self.TIMER_TICKS_PER_SECOND)} seconds')
         self.set_raw_interval(self.TIMER_TICKS_PER_SECOND * seconds)
 
     def get_voltage(self):
@@ -63,12 +62,9 @@ class Connector(RawConnector):
     def set_voltage(self, volts):
         """Sets the desired Geiger tube supply voltage in volts."""
         if volts < self.MIN_VOLTAGE or volts > self.MAX_VOLTAGE:
-            raise CommException("voltage has to have value between " + str(self.MIN_VOLTAGE) + " and "
-                                + str(self.MAX_VOLTAGE) + " volts")
+            raise CommException(f'voltage has to have value between {str(self.MIN_VOLTAGE)} and {str(self.MAX_VOLTAGE)} volts')
         self.set_raw_voltage(int(self._volt_divider_factor * volts * 1024.0 / 1.1))
 
     def __str__(self):
         """Returns a string containing all data from the device: CPM, current radioactivity, voltage etc."""
-        return "Radiation: " + str(self.get_radiation()) + " uS/h, CPM: " + str(self.get_CPM()) + " int. " + str(
-            self.get_interval()) + " s, supply: " + str(self.get_voltage()) + " V, count acknowledged: " + str(
-            self.is_count_acknowledged())
+        return f'Radiation: {str(self.get_radiation())} uS/h, CPM: {str(self.get_CPM())} int. {str(self.get_interval())} s, supply: {str(self.get_voltage())}V, count acknowledged: {str(self.is_count_acknowledged())} '

@@ -6,7 +6,7 @@ from usb_communication.comm_exception import CommException
 
 
 class Monitor(object):
-    INTERVALS = 1
+    INTERVAL = 0.001
 
     def __init__(self, usb_comm):
         self._timer = None
@@ -14,12 +14,12 @@ class Monitor(object):
         self._usb_communication = usb_comm
 
         self._usb_communication.set_voltage_from_config_file()
-        self._usb_communication.set_interval(self.INTERVALS)
+        self._usb_communication.set_interval(self.INTERVAL)
 
     def start(self):
         """Enables cyclic monitoring. The first measurement cycle
         has the 1.5 length of the given interval in order to collect data by the device."""
-        self._timer = threading.Timer(self.INTERVALS, self._update)
+        self._timer = threading.Timer(self.INTERVAL, self._update)
         self._timer.setDaemon(True)
         self._timer.start()
 
@@ -39,7 +39,7 @@ class Monitor(object):
         The first cycle has 1.5*interval length to give the Geiger device
         time to collect counts. Then, update takes place in the middle of
         the next measuring cycle."""
-        self._timer = threading.Timer(0.001, self._update)
+        self._timer = threading.Timer(self.INTERVAL, self._update)
         self._timer.setDaemon(True)
         self._timer.start()
 
@@ -48,20 +48,20 @@ class Monitor(object):
         try:
             cpm, self._radiation = self._usb_communication.get_CP_mand_radiation()
         except CommException as e:
-            print("USB device error: %s. Forcing device reset and wait of 1.5 cycle length.", str(e))
+            print(f'USB device error: {str(e)}. Forcing device reset and wait of 1.5 cycle length.')
             print("Resetting device.")
             try:
                 self._usb_communication.reset_connection()
-                print("Setting programmed voltage and interval to %d seconds.", self.INTERVALS)
+                print(f'Setting programmed voltage and interval to {self.INTERVAL} seconds.')
                 self._usb_communication.set_voltage_from_config_file()
-                self._usb_communication.set_interval(self.INTERVALS)
+                self._usb_communication.set_interval(self.INTERVAL)
             except CommException as e:
-                print("Error at reinitializing device: %s", str(e))
+                print(f'Error at reinitializing device: {str(e)}')
                 self.stop()
                 self._thread.interrupt_main()
 
             self._timer.cancel()
-            self._timer = threading.Timer(1.5 * self.INTERVALS, self._update)
+            self._timer = threading.Timer(1.5 * self.INTERVAL, self._update)
             self._timer.setDaemon(True)
             self._timer.start()
             return
