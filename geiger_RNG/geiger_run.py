@@ -1,4 +1,3 @@
-import os
 import signal
 import sys
 
@@ -11,24 +10,18 @@ from usb_communication.connector import Connector
 
 
 class Geiger:
-
-
-
     INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
-    CONFIG_FILE_NAME = 'configuration.ini'
 
     def __init__(self):
         self.__is_configuration_loaded = False
-        self.__config_path = None
         self.__comm = None
         self.__monitor = None
 
-        self.__read_conf()
         self.__initialise_usb_communication()
         self.__conf = configparser.ConfigParser()
-        self.__monitor = monitor.Monitor(configuration=self.__conf, usbcomm=self.__comm)
+        self.__monitor = monitor.Monitor(usbcomm=self.__comm)
         self.__generator = GeigerRandomNumberGenerator(2)
 
         self.__init_ctr_c_handler()
@@ -36,30 +29,11 @@ class Geiger:
         self.__monitor.start()
         self.__main_loop()
 
-    def __read_conf(self):
-        self.__get_config_path()
-
-        for filePath in self.__config_path:
-            try:
-                self.__conf.read_file(open(filePath))
-                self.__is_configuration_loaded = True
-                break
-            except IOError:
-                self.__is_configuration_loaded = False
-
-        if not self.__is_configuration_loaded:
-            print >> sys.stderr, self.ERROR_LOADING_CONFIGURATION_MESSAGE
-            sys.exit(1)
-
-    def __get_config_path(self):
-        self.__config_path = [".", os.path.dirname(__file__), os.path.expanduser("~/.geiger"), "/etc/geiger"]
-        self.__config_path = [os.path.realpath(os.path.join(directory, self.CONFIG_FILE_NAME)) for directory in
-                              self.__config_path]
 
     def __initialise_usb_communication(self):
         try:
             print(self.INITIALIZATION_MESSAGE)
-            self.__comm = Connector(self.__conf)
+            self.__comm = Connector()
         except CommException as exp:
             print(f"{self.ERROR_INITIALIZATION_USB_MESSAGE} {str(exp)}")
             sys.exit(1)

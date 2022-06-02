@@ -35,7 +35,7 @@ class Connector(RawConnector):
 
     def get_CPM(self):
         "Returns radiation in counts per minute."
-        return self.getCPI() / self.get_interval() * 60.0
+        return self.get_CPI() / self.get_interval() * 60.0
 
     def get_radiation(self, cpm=None):
         "Returns radiation in uSv/h."
@@ -46,28 +46,28 @@ class Connector(RawConnector):
 
     def get_interval(self):
         "Returns measuring interval in seconds."
-        return self.getRawInterval() / self.TIMER_TICKS_PER_SECOND
+        return self.get_raw_interval() / self.TIMER_TICKS_PER_SECOND
 
     def set_interval(self, seconds):
         "Sets the measuring interval in seconds."
         if seconds < 1 or seconds > 0xffff / self.TIMER_TICKS_PER_SECOND:
             raise CommException("interval has to be between 1 and " + str(0xffff / self.TIMER_TICKS_PER_SECOND) + " seconds")
-        self.setRawInterval(self.TIMER_TICKS_PER_SECOND * seconds)
+        self.set_raw_interval(self.TIMER_TICKS_PER_SECOND * seconds)
 
     def get_voltage(self):
         "Returns the measured Geiger tube supply voltage in volts."
-        return int(round(1.1 * self.getRawVoltage() / (self._volt_divider_factor * 1024.0)))
+        return int(round(1.1 * self.get_raw_voltage() / (self._volt_divider_factor * 1024.0)))
 
     def set_voltage(self, volts):
         "Sets the desired Geiger tube supply voltage in volts."
         if volts < self.MIN_VOLTAGE or volts > self.MAX_VOLTAGE:
             raise CommException("voltage has to have value between " + str(self.MIN_VOLTAGE) + " and "
                                 + str(self.MAX_VOLTAGE) + " volts")
-        self.setRawVoltage(int(self._volt_divider_factor * volts * 1024.0 / 1.1))
+        self.set_raw_voltage(int(self._volt_divider_factor * volts * 1024.0 / 1.1))
 
     def __str__(self):
         "Returns a string containing all data from the device: CPM, current radioactivity, voltage etc."
 
         return "Radiation: " + str(self.get_radiation()) + " uS/h, CPM: " + str(self.get_CPM()) + " int. " + str(
             self.get_interval()) + " s, supply: " + str(self.get_voltage()) + " V, count acknowledged: " + str(
-            self.isCountAcknowledged())
+            self.is_count_acknowledged())

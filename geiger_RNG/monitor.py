@@ -18,7 +18,7 @@ class Monitor(object):
 
     _radiation = None
 
-    def __init__(self, configuration, usbcomm):
+    def __init__(self, usbcomm):
         self._usbcomm = usbcomm
         self._interval = self.INTERVALS
 
@@ -26,9 +26,8 @@ class Monitor(object):
         usbcomm.set_interval(self._interval)
 
     def start(self):
-        """Enables cyclic monitoring. The first measurement cycle has the 1.5 length of the given interval
-		in order to collect data by the device.
-		"""
+        """Enables cyclic monitoring. The first measurement cycle
+        has the 1.5 length of the given interval in order to collect data by the device."""
         self._timer = threading.Timer(self._interval, self._update)
         self._timer.setDaemon(True)
         self._timer.start()
@@ -62,7 +61,7 @@ class Monitor(object):
             print("USB device error: %s. Forcing device reset and wait of 1.5 cycle length.", str(e))
             print("Resetting device.")
             try:
-                self._usbcomm.resetConnection()
+                self._usbcomm.reset_connection()
                 print("Setting programmed voltage and interval to %d seconds.", self._interval)
                 self._usbcomm.set_voltage_from_config_file()
                 self._usbcomm.set_interval(self._interval)
