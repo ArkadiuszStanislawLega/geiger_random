@@ -20,15 +20,13 @@ class Geiger:
         self.__monitor = None
 
         self.__initialise_usb_communication()
-        self.__conf = configparser.ConfigParser()
-        self.__monitor = monitor.Monitor(usbcomm=self.__comm)
+        self.__monitor = monitor.Monitor(usb_comm=self.__comm)
         self.__generator = GeigerRandomNumberGenerator(2)
 
         self.__init_ctr_c_handler()
 
         self.__monitor.start()
         self.__main_loop()
-
 
     def __initialise_usb_communication(self):
         try:
@@ -44,21 +42,19 @@ class Geiger:
         signal.signal(signal.SIGTERM, self.__signal_handler)
 
     def __main_loop(self):
-        last = []
+        collected_readings = []
         while True:
             if self.__monitor.get_radiation is not None and self.__monitor.get_radiation > 0:
-                last.append(self.__monitor.get_radiation)
-                if last[0] != self.__monitor.get_radiation:
+                collected_readings.append(self.__monitor.get_radiation)
+                if collected_readings[0] != self.__monitor.get_radiation:
                     self.__generator.set_pulse_time()
                     if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
                         print((str(self.__generator.get_int_number())))
 
-                if len(last) > 1:
-                    last.pop(0)
+                if len(collected_readings) > 1:
+                    collected_readings.pop(0)
 
     def __signal_handler(self, signum, frame):
         """Handles stopping signals, closes all updaters and threads and exits."""
         self.__monitor.stop()
         sys.exit(1)
-
-
