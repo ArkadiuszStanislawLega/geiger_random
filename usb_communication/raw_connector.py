@@ -14,12 +14,12 @@ class RawConnector(object):
     DEVICE_NAME = "USB Geiger"
     VENDOR_ID = 0x16c0
     DEVICE_ID = 0x05df
-    CPI = 10
-    SET_INTERVAL = 20
-    GET_INTERVAL = 21
-    SET_VOLTAGE = 30
-    GET_VOLTAGE = 31
-    ACKNOWLEDGE_UNCHECKED_COUNT = 40
+    GET_CPI_FROM_MICRO = 10
+    SET_INTERVAL_IN_MICRO = 20
+    GET_INTERVAL_FROM_MICRO = 21
+    SET_VOLTAGE_IN_MICRO = 30
+    GET_VOLTAGE_FROM_MICRO = 31
+    IS_ACKNOWLEDGE_UNCHECKED_COUNT_FROM_MICRO = 40
 
     def __init__(self):
         """Initiates the class and opens the device. Warning! 
@@ -76,29 +76,29 @@ class RawConnector(object):
     def set_raw_interval(self, raw_interval):
         """Sets the time period of counting cycle. After that time, the counts value
         is transferred to output buffer and accessible for getting. CPI value is cleared during this operation."""
-        self._send_message(self.SET_INTERVAL, int(raw_interval))
+        self._send_message(self.SET_INTERVAL_IN_MICRO, int(raw_interval))
 
     def get_raw_interval(self):
         """Returns the programmed interval."""
-        return int(self._recv_message(self.GET_INTERVAL))
+        return int(self._recv_message(self.GET_INTERVAL_FROM_MICRO))
 
     def set_raw_voltage(self, raw_voltage):
         """Sets the desired Geiger tube supply voltage."""
-        self._send_message(self.SET_VOLTAGE, int(raw_voltage))
+        self._send_message(self.SET_VOLTAGE_IN_MICRO, int(raw_voltage))
 
     def get_raw_voltage(self):
         """Returns the measured actual Geiger tube supply voltage."""
-        return int(self._recv_message(self.GET_VOLTAGE))
+        return int(self._recv_message(self.GET_VOLTAGE_FROM_MICRO))
 
     def get_CPI(self):
         """Returns the number of counts gathered during programmed interval."""
-        return float(self._recv_message(self.CPI))
+        return float(self._recv_message(self.GET_CPI_FROM_MICRO))
 
     def is_count_acknowledged(self):
         """If a new count occurs, this flag is set. The flag is cleared after reading it.
          This is meant to check for counts in real-time. By checking this flag often enough, 
          you can get precise information about any new count."""
-        if self._recv_message(self.ACKNOWLEDGE_UNCHECKED_COUNT) == 1:
+        if self._recv_message(self.IS_ACKNOWLEDGE_UNCHECKED_COUNT_FROM_MICRO) == 1:
             return True
         else:
             return False

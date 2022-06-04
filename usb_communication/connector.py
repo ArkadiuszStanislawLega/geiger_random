@@ -40,10 +40,12 @@ class Connector(RawConnector):
 
     def get_radiation(self, cpm=None):
         """Returns radiation in uSv/h."""
-        if cpm is None:
-            cpm = self.get_CPM()
-        value = (cpm / 60.0) * 10.0 / self._tube_sensitivity
-        return cpm
+        # if cpm is None:
+        #     cpm = self.get_CPM()
+        # value = (cpm / 60.0) * 10.0 / self._tube_sensitivity
+        if self.get_CPI() > 0:
+            # print(str(self.get_CPI()))
+            return self.get_CPI()
 
     def get_interval(self):
         """Returns measuring interval in seconds."""
@@ -51,7 +53,7 @@ class Connector(RawConnector):
 
     def set_interval(self, seconds):
         """Sets the measuring interval in seconds."""
-        if seconds < 1 or seconds > 0xffff / self.TIMER_TICKS_PER_SECOND:
+        if seconds < 1 or seconds > (0xffff / self.TIMER_TICKS_PER_SECOND):
             raise CommException(f'interval has to be between 1 and {str(0xffff / self.TIMER_TICKS_PER_SECOND)} seconds')
         self.set_raw_interval(self.TIMER_TICKS_PER_SECOND * seconds)
 

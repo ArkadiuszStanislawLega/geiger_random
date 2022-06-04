@@ -10,7 +10,7 @@ from usb_communication.connector import Connector
 
 
 class Geiger:
-    SIZE_OF_GENERATED_NUMBER_IN_BITS = 2
+    SIZE_OF_GENERATED_NUMBER_IN_BITS = 4
     INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
@@ -22,7 +22,7 @@ class Geiger:
 
         self.__initialise_usb_communication()
         self.__monitor = monitor.Monitor(usb_comm=self.__comm)
-        self.__generator = GeigerRandomNumberGenerator(SIZE_OF_GENERATED_NUMBER_IN_BITS)
+        self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
 
         self.__init_ctr_c_handler()
 
@@ -45,12 +45,20 @@ class Geiger:
     def __main_loop(self):
         collected_readings = []
         while True:
-            if self.__monitor.get_radiation is not None and self.__monitor.get_radiation > 0:
-                collected_readings.append(self.__monitor.get_radiation)
-                if collected_readings[0] != self.__monitor.get_radiation:
+            if self.__monitor.get_radiation is not None and self.__monitor.get_is_aknowlage:
+
+                if len(collected_readings) == 0:
+                    collected_readings.append(self.__monitor.get_radiation)
                     self.__generator.set_pulse_time()
                     if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
                         print((str(self.__generator.get_int_number())))
+
+                else:
+                    if collected_readings[0] != self.__monitor.get_radiation:
+                        collected_readings.append(self.__monitor.get_radiation)
+                        self.__generator.set_pulse_time()
+                        if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
+                            print((str(self.__generator.get_int_number())))
 
                 if len(collected_readings) > 1:
                     collected_readings.pop(0)
