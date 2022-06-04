@@ -45,8 +45,13 @@ class RngView:
         self.__funct()
 
     def insert_to_list(self, value):
-        string = f'{str(value)} {datetime.datetime.now().time()}'
-        self.__list.insert(self.__list.size()-1,  string)
+        f = Frame()
+        l_time = Label(master=f, text=str(datetime.datetime.now().time()))
+        l_value = Label(master=f, text=str(value))
+
+        l_time.pack()
+        l_value.pack(after=l_time)
+
+        self.__list.insert(self.__list.size() - 1, f)
+
         self.win.update()
-
-

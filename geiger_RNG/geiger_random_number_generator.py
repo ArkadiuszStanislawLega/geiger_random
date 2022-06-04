@@ -22,6 +22,13 @@ class GeigerRandomNumberGenerator:
         print(self.__random_bits)
         return len(self.__random_bits)
 
+    def get_bits(self):
+        val = ''
+        for bit in self.__random_bits:
+            val += str(bit)
+
+        return val
+
     @property
     def get_number_of_bits(self):
         return self.__number_of_bits
