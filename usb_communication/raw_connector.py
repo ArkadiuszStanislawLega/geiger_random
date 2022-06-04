@@ -106,4 +106,5 @@ class RawConnector(object):
     def __str__(self):
         """Returns the string containing all data acquired from the device: 
         actual voltage, current CPI and countAcknowledged flag."""
-        return f'CPI: {str(self.get_CPI())}, supply: {str(self.get_raw_voltage())}, count acknowledged: {str(self.is_count_acknowledged())}'
+        return f'CPI: {str(self.get_CPI())}, supply: {str(self.get_raw_voltage())}, count acknowledged: ' \
+               f'{str(self.is_count_acknowledged())}'

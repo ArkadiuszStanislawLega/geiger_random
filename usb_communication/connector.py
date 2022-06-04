@@ -64,9 +64,12 @@ class Connector(RawConnector):
     def set_voltage(self, volts):
         """Sets the desired Geiger tube supply voltage in volts."""
         if volts < self.MIN_VOLTAGE or volts > self.MAX_VOLTAGE:
-            raise CommException(f'voltage has to have value between {str(self.MIN_VOLTAGE)} and {str(self.MAX_VOLTAGE)} volts')
+            raise CommException(
+                f'voltage has to have value between {str(self.MIN_VOLTAGE)} and {str(self.MAX_VOLTAGE)} volts')
         self.set_raw_voltage(int(self._volt_divider_factor * volts * 1024.0 / 1.1))
 
     def __str__(self):
         """Returns a string containing all data from the device: CPM, current radioactivity, voltage etc."""
-        return f'Radiation: {str(self.get_radiation())} uS/h, CPM: {str(self.get_CPM())} int. {str(self.get_interval())} s, supply: {str(self.get_voltage())}V, count acknowledged: {str(self.is_count_acknowledged())} '
+        return f'Radiation: {str(self.get_radiation())} uS/h, CPM: {str(self.get_CPM())} int. ' \
+               f'{str(self.get_interval())} s, supply: {str(self.get_voltage())}V, count acknowledged: ' \
+               f'{str(self.is_count_acknowledged())}'
