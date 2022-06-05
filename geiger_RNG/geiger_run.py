@@ -10,6 +10,7 @@ from time import strftime
 from geiger_RNG import monitor
 from geiger_RNG.geiger_random_number_generator import GeigerRandomNumberGenerator
 from geiger_RNG.geiger_simulator import GeigerSimulator
+from geiger_RNG.view import RngView
 from usb_communication.comm_exception import CommException
 from usb_communication.connector import Connector
 
@@ -40,6 +41,7 @@ class Geiger:
         self.__is_working = False
         self.__current_index = 0
         self.__wb = Workbook()
+        self.__view = RngView(funct=self.run, controller=self)
 
         self.__sheet1 = self.__wb.add_sheet('Sheet 1')
 
@@ -52,7 +54,11 @@ class Geiger:
 
         # self.__monitor.start()
         # self.__main_loop()
-        self.__main_loop_sim()
+        # self.run()
+        self.__view.run_main_loop()
+
+    def is_working(self):
+        return self.__is_working
 
     def __initialise_usb_communication(self):
         try:
@@ -91,10 +97,13 @@ class Geiger:
                     collected_readings.pop(0)
 
     def __main_loop_sim(self):
-        self.__is_working = True
-        self.__simulation()
+        main_loop = threading.Thread(target=self.__simulation)
+        main_loop.daemon = True
+        main_loop.start()
 
-    def __run(self):
+        self.__view.run_main_loop()
+
+    def run(self):
         if self.__is_working:
             self.__is_working = False
         else:
@@ -128,7 +137,7 @@ class Geiger:
         self.__excel_first_row()
 
         while self.__is_working:
-            # time.sleep(0.05)
+            time.sleep(0.05)
             simulation.get_values()
             if simulation.get_radiation() is not None and simulation.is_count_acknowledged():
                 self.__compare_two_last_readings(simulation)
@@ -151,6 +160,8 @@ class Geiger:
 
     def __write_readings_to_file(self, simulation):
         if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
+            self.__view.insert_to_list(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
+                                       bits=self.__generator.get_bits())
             self.__excel(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
                          bits=self.__generator.get_bits())
             self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
