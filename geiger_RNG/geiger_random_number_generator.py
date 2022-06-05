@@ -57,10 +57,9 @@ class GeigerRandomNumberGenerator:
         Adds a bit to the random bit string list as long as the bit limit is not exceeded.
         :return: None
         """
-        self.__remove_bits_if_size_is_max()
         self.__append_bits_to_list()
 
-    def __remove_bits_if_size_is_max(self):
+    def remove_bits_if_size_is_max(self):
         """
         Clears the bit list when the number of bits equals the reached limit.
         :return: None
@@ -77,7 +76,7 @@ class GeigerRandomNumberGenerator:
             first_time = self.__pulses_times[1] - self.__pulses_times[0]
             second_time = self.__pulses_times[2] - self.__pulses_times[1]
             print(f'first={first_time} second={second_time}')
-            self.__random_bits.insert(0, (0x00, 0x01)[first_time > second_time])
+            self.__random_bits.insert(0, (0x01, 0x00)[first_time > second_time])
 
     def get_int_number(self):
         """

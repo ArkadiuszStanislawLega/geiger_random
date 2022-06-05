@@ -4,21 +4,20 @@ import sys
 
 import configparser
 import threading
+import time
 from time import strftime
 
 from geiger_RNG import monitor
 from geiger_RNG.geiger_random_number_generator import GeigerRandomNumberGenerator
 from geiger_RNG.geiger_simulator import GeigerSimulator
-from geiger_RNG.view import RngView
 from usb_communication.comm_exception import CommException
 from usb_communication.connector import Connector
 
-import xlwt
 from xlwt import Workbook
 
 
 class Geiger:
-    SIZE_OF_GENERATED_NUMBER_IN_BITS = 16
+    SIZE_OF_GENERATED_NUMBER_IN_BITS = 8
     INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
@@ -39,7 +38,6 @@ class Geiger:
         self.__comm = None
         self.__monitor = None
         self.__is_working = False
-        # self.__view = RngView(funct=self.__run, controller=self)
         self.__current_index = 0
         self.__wb = Workbook()
 
@@ -50,6 +48,7 @@ class Geiger:
         self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
 
         self.__init_ctr_c_handler()
+        self.__readings_collector = []
 
         # self.__monitor.start()
         # self.__main_loop()
@@ -72,6 +71,7 @@ class Geiger:
 
         collected_readings = []
         while True:
+
             if self.__monitor.get_radiation is not None and self.__monitor.get_is_aknowlage:
 
                 if len(collected_readings) == 0:
@@ -91,17 +91,8 @@ class Geiger:
                     collected_readings.pop(0)
 
     def __main_loop_sim(self):
-        # self.__simulation()
-        # main_loop = threading.Thread(target=self.__simulation)
-        # main_loop.daemon = True
-        # main_loop.start()
-
-        # self.__view.run_main_loop()
         self.__is_working = True
         self.__simulation()
-
-    def get_is_run(self):
-        return self.__is_working
 
     def __run(self):
         if self.__is_working:
@@ -133,34 +124,37 @@ class Geiger:
 
     def __simulation(self):
         simulation = GeigerSimulator()
-        collected_readings = []
+        self.__readings_collector = []
         self.__excel_first_row()
 
         while self.__is_working:
+            # time.sleep(0.05)
             simulation.get_values()
-            # self.__excel(radiation=None, number=None,
-            #              flag=simulation.is_count_acknowledged())
             if simulation.get_radiation() is not None and simulation.is_count_acknowledged():
-                if len(collected_readings) == 0:
-                    collected_readings.append(simulation.get_radiation())
-                    if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
-                        # self.__view.insert_to_list(str(self.__generator.get_int_number()))
-                        # print((str(self.__generator.get_int_number())))
-                        self.__excel(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
-                                     bits=self.__generator.get_bits())
+                self.__compare_two_last_readings(simulation)
+                self.__remove_oldest_reading()
 
-                else:
-                    if collected_readings[0] != simulation.get_radiation():
-                        collected_readings.append(simulation.get_radiation())
-                        self.__generator.set_pulse_time()
-                        if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
-                            # self.__view.insert_to_list(str(self.__generator.get_int_number()))
-                            # print((str(self.__generator.get_int_number())))
-                            self.__excel(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
-                                         bits=self.__generator.get_bits())
+    def __remove_oldest_reading(self):
+        if len(self.__readings_collector) > 1:
+            self.__readings_collector.pop(0)
 
-                if len(collected_readings) > 1:
-                    collected_readings.pop(0)
+    def __compare_two_last_readings(self, simulation):
+        if len(self.__readings_collector) == 0:
+            self.__readings_collector.append(simulation.get_radiation())
+            self.__write_readings_to_file(simulation)
+
+        else:
+            if self.__readings_collector[0] != simulation.get_radiation():
+                self.__readings_collector.append(simulation.get_radiation())
+                self.__generator.set_pulse_time()
+                self.__write_readings_to_file(simulation)
+
+    def __write_readings_to_file(self, simulation):
+        if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
+            self.__excel(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
+                         bits=self.__generator.get_bits())
+            self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
+            # self.__generator.remove_bits_if_size_is_max()
 
     def __signal_handler(self, signum, frame):
         """Handles stopping signals, closes all updaters and threads and exits."""
