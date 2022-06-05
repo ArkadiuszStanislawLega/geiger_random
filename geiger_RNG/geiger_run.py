@@ -2,10 +2,8 @@ import datetime
 import signal
 import sys
 
-import configparser
 import threading
 import time
-from time import strftime
 
 from geiger_RNG import monitor
 from geiger_RNG.geiger_random_number_generator import GeigerRandomNumberGenerator
@@ -16,6 +14,11 @@ from usb_communication.connector import Connector
 
 from xlwt import Workbook
 
+LEVEL_OF_RADIATION_COLUMN = 'Poziom naprowmieniowania'
+GENERATED_NUMBER_COLUMN = 'Wygenerowana cyfra'
+BITS_COLUM = 'Bity'
+TIME_ADDED_COLUMN = 'Czas dodania wpisu'
+MILLISECONDS_ADDED_COLUMN = 'Milisekundy dodania wpisu'
 
 class Geiger:
     SIZE_OF_GENERATED_NUMBER_IN_BITS = 8
@@ -23,11 +26,7 @@ class Geiger:
     ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
     ERROR_LOADING_CONFIGURATION_MESSAGE = 'Error at loading configuration file.'
     EXCEL_FILE_NAME = 'wniki_pomiaru.xls'
-    LEVEL_OF_RADIATION_COLUMN = 'Poziom naprowmieniowania'
-    GENERATED_NUMBER_COLUMN = 'Wygenerowana cyfra'
-    BITS_COLUM = 'Bity'
-    TIME_ADDED_COLUMN = 'Czas dodania wpisu'
-    MILLISECONDS_ADDED_COLUMN = 'Milisekundy dodania wpisu'
+    EXCEL_SHIT_TITLE = 'Zakladka 1'
     COLUMN_INDEX_RADIATION = 0
     COLUMN_INDEX_GENERATED_NUMBER = 1
     COLUMN_INDEX_BITS = 2
@@ -35,27 +34,41 @@ class Geiger:
     COLUMN_INDEX_MILLISECONDS = 4
 
     def __init__(self):
-        self.__is_configuration_loaded = False
         self.__comm = None
         self.__monitor = None
+
+        self.__is_simulation = True         #<<<!!!!Jeżeli podłączone jest urządzenie tą flagę trzeba dać na False!!!!!
         self.__is_working = False
+        self.__is_should_be_set_pulse_time = False
+        self.__is_should_be_data_save = False
+
         self.__current_index = 0
         self.__wb = Workbook()
         self.__view = RngView(funct=self.run, controller=self)
+        self.__current_radiation = None
 
-        self.__sheet1 = self.__wb.add_sheet('Sheet 1')
+        self.__sheet1 = self.__wb.add_sheet(self.EXCEL_SHIT_TITLE)
 
-        # self.__initialise_usb_communication()
-        # self.__monitor = monitor.Monitor(usb_comm=self.__comm)
+        self.__initialise_connection_if_not_simulation()
+
         self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
 
         self.__init_ctr_c_handler()
         self.__readings_collector = []
 
-        # self.__monitor.start()
-        # self.__main_loop()
-        # self.run()
+        self.__start_readings_if_not_simulation()
         self.__view.run_main_loop()
+
+    def __initialise_connection_if_not_simulation(self):
+        if not self.__is_simulation:
+            self.__initialise_usb_communication()
+            self.__monitor = monitor.Monitor(usb_comm=self.__comm)
+
+    def __start_readings_if_not_simulation(self):
+        if not self.__is_simulation:
+            self.__monitor.start()
+            self.__main_loop()
+            self.run()
 
     def is_working(self):
         return self.__is_working
@@ -74,7 +87,6 @@ class Geiger:
         signal.signal(signal.SIGTERM, self.__signal_handler)
 
     def __main_loop(self):
-
         collected_readings = []
         while True:
 
@@ -96,26 +108,56 @@ class Geiger:
                 if len(collected_readings) > 1:
                     collected_readings.pop(0)
 
-    def __main_loop_sim(self):
-        main_loop = threading.Thread(target=self.__simulation)
-        main_loop.daemon = True
-        main_loop.start()
+    def __main_loop_new(self):
+        self.__readings_collector = []
+        self.__excel_first_row()
 
-        self.__view.run_main_loop()
+        while self.__is_working:
+            self.__current_radiation = self.__monitor.get_radiation()
+            if self.__current_radiation is not None and self.__monitor.is_count_acknowledged():
+                self.__append_readings_if_list_is_zero()
+                self.__compare_two_last_readings()
+                self.__set_pulse_time_to_generator()
+                self.__write_readings_to_file()
+                self.__remove_oldest_reading()
 
-    def run(self):
-        if self.__is_working:
-            self.__is_working = False
-        else:
-            self.__is_working = True
-        self.__main_loop_sim()
+            self.__current_radiation = None
+
+    def __append_readings_if_list_is_zero(self):
+        if len(self.__readings_collector) == 0:
+            self.__readings_collector.append(self.__current_radiation)
+            self.__is_should_be_data_save = True
+
+    def __compare_two_last_readings(self):
+        if self.__readings_collector[0] != self.__current_radiation:
+            self.__readings_collector.append(self.__current_radiation)
+            self.__is_should_be_data_save = True
+            self.__is_should_be_set_pulse_time = True
+
+    def __set_pulse_time_to_generator(self):
+        self.__generator.set_pulse_time()
+        self.__is_should_be_set_pulse_time = False
+
+    def __write_readings_to_file(self):
+        if self.__is_should_be_data_save:
+            if self.__generator.get_random_bits_number == self.SIZE_OF_GENERATED_NUMBER_IN_BITS:
+                generated_number = self.__generator.get_int_number()
+                self.__view.insert_to_list(radiation=self.__current_radiation,
+                                           number=generated_number,
+                                           bits=self.__generator.get_bits())
+                self.__excel(radiation=self.__current_radiation,
+                             number=generated_number,
+                             bits=self.__generator.get_bits())
+                # self.__generator = GeigerRandomNumberGenerator(self.SIZE_OF_GENERATED_NUMBER_IN_BITS)
+                self.__generator.remove_bits_if_size_is_max()
+                self.__is_should_be_data_save = False
 
     def __excel_first_row(self):
-        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_RADIATION, self.LEVEL_OF_RADIATION_COLUMN)
-        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_GENERATED_NUMBER, self.GENERATED_NUMBER_COLUMN)
-        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_BITS, self.BITS_COLUM)
-        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_TIME, self.TIME_ADDED_COLUMN)
-        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_MILLISECONDS, self.MILLISECONDS_ADDED_COLUMN)
+        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_RADIATION, LEVEL_OF_RADIATION_COLUMN)
+        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_GENERATED_NUMBER, GENERATED_NUMBER_COLUMN)
+        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_BITS, BITS_COLUM)
+        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_TIME, TIME_ADDED_COLUMN)
+        self.__sheet1.write(self.__current_index, self.COLUMN_INDEX_MILLISECONDS, MILLISECONDS_ADDED_COLUMN)
 
         self.__wb.save(self.EXCEL_FILE_NAME)
         self.__current_index += 1
@@ -131,6 +173,28 @@ class Geiger:
         self.__wb.save(self.EXCEL_FILE_NAME)
         self.__current_index += 1
 
+    def __remove_oldest_reading(self):
+        if len(self.__readings_collector) > 1:
+            self.__readings_collector.pop(0)
+
+    def __main_loop_sim(self):
+        main_loop = threading.Thread(target=self.__simulation)
+        main_loop.daemon = True
+        main_loop.start()
+
+        self.__view.run_main_loop()
+
+    def run(self):
+        if self.__is_working:
+            self.__is_working = False
+        else:
+            self.__is_working = True
+
+        if self.__is_simulation:
+            self.__main_loop_sim()
+        else:
+            self.__main_loop_new()
+
     def __simulation(self):
         simulation = GeigerSimulator()
         self.__readings_collector = []
@@ -140,25 +204,21 @@ class Geiger:
             time.sleep(0.05)
             simulation.get_values()
             if simulation.get_radiation() is not None and simulation.is_count_acknowledged():
-                self.__compare_two_last_readings(simulation)
+                self.__compare_two_simulated_last_readings(simulation)
                 self.__remove_oldest_reading()
 
-    def __remove_oldest_reading(self):
-        if len(self.__readings_collector) > 1:
-            self.__readings_collector.pop(0)
-
-    def __compare_two_last_readings(self, simulation):
+    def __compare_two_simulated_last_readings(self, simulation):
         if len(self.__readings_collector) == 0:
             self.__readings_collector.append(simulation.get_radiation())
-            self.__write_readings_to_file(simulation)
+            self.__write_simulated_readings_to_file(simulation)
 
         else:
             if self.__readings_collector[0] != simulation.get_radiation():
                 self.__readings_collector.append(simulation.get_radiation())
                 self.__generator.set_pulse_time()
-                self.__write_readings_to_file(simulation)
+                self.__write_simulated_readings_to_file(simulation)
 
-    def __write_readings_to_file(self, simulation):
+    def __write_simulated_readings_to_file(self, simulation):
         if self.__generator.get_random_bits_number == self.__generator.get_number_of_bits:
             self.__view.insert_to_list(radiation=simulation.get_radiation(), number=self.__generator.get_int_number(),
                                        bits=self.__generator.get_bits())
