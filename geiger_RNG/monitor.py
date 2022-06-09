@@ -11,7 +11,7 @@ class Monitor(object):
         self._timer = None
         self._radiation = None
         self._usb_communication = usb_comm
-        self.__is_acnowlage = False
+        self.__is_count_acknowledged = False
 
         self._usb_communication.set_voltage_from_config_file()
         self._usb_communication.set_interval(self.INTERVAL)
@@ -34,8 +34,8 @@ class Monitor(object):
         return self._radiation
 
     @property
-    def get_is_aknowlage(self):
-        return  self.__is_acnowlage
+    def is_count_acknowledged(self):
+        return  self.__is_count_acknowledged
 
     def _update(self):
         """This method is called by the internal timer every 'interval'
@@ -43,12 +43,12 @@ class Monitor(object):
         The first cycle has 1.5*interval length to give the Geiger device
         time to collect counts. Then, update takes place in the middle of
         the next measuring cycle."""
-        self._timer = threading.Timer(0.027, self._update)
+        self._timer = threading.Timer(0.01, self._update)
         self._timer.setDaemon(True)
         self._timer.start()
         try:
             cpm, self._radiation = self._usb_communication.get_CP_mand_radiation()
-            self.__is_acnowlage = self._usb_communication.is_count_acknowledged()
+            self.__is_count_acknowledged = self._usb_communication.is_count_acknowledged()
         except CommException as e:
             print(f'USB device error: {str(e)}. Forcing device reset and wait of 1.5 cycle length.')
             print("Resetting device.")
@@ -68,4 +68,5 @@ class Monitor(object):
             self._timer.start()
             return
 
-        print(f'pushing data: {cpm} CPM, {self._radiation} uSv/h')
+        if self._usb_communication.get_radiation() is not None and self.is_count_acknowledged:
+            print(f'{self._usb_communication.get_radiation()} uSv/h')

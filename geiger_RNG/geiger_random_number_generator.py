@@ -15,11 +15,11 @@ class GeigerRandomNumberGenerator:
         self.__pulses_times = []
 
     @property
-    def get_random_bits_number(self):
+    def get_current_size_of_bits(self):
         """
         :return: Number of collected bits.
         """
-        print(self.__random_bits)
+        # print(self.__random_bits)
         return len(self.__random_bits)
 
     def get_bits(self):
@@ -43,6 +43,7 @@ class GeigerRandomNumberGenerator:
         self.__pulses_times.append(datetime.datetime.now())
 
         self.__add_bit_to_list()
+        print(f'Generator: {self.__random_bits}')
 
     def __remove_first_pulse_time(self):
         """
@@ -75,8 +76,9 @@ class GeigerRandomNumberGenerator:
         if len(self.__pulses_times) == self.NUMBER_OF_TICKS:
             first_time = self.__pulses_times[1] - self.__pulses_times[0]
             second_time = self.__pulses_times[2] - self.__pulses_times[1]
-            print(f'first={first_time} second={second_time}')
+            # print(f'first={first_time} second={second_time}')
             self.__random_bits.insert(0, (0x01, 0x00)[first_time > second_time])
+
 
     def get_int_number(self):
         """
