@@ -7,7 +7,7 @@ BITS_COLUM = 'Bity'
 TIME_ADDED_COLUMN = 'Czas dodania wpisu'
 MILLISECONDS_ADDED_COLUMN = 'Milisekundy dodania wpisu'
 
-SIZE_OF_GENERATED_NUMBER_IN_BITS = 4
+SIZE_OF_GENERATED_NUMBER_IN_BITS = 8
 
 INITIALIZATION_MESSAGE = 'Initializing Geiger device...'
 ERROR_INITIALIZATION_USB_MESSAGE = 'Error at initializing USB device: '
